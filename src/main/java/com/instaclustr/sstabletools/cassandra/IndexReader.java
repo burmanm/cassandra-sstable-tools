@@ -7,6 +7,7 @@ import com.instaclustr.sstabletools.AbstractSSTableReader;
 import com.instaclustr.sstabletools.PartitionStatistics;
 import com.instaclustr.sstabletools.SSTableStatistics;
 import org.apache.cassandra.dht.IPartitioner;
+import org.apache.cassandra.io.sstable.KeyReader;
 import org.apache.cassandra.io.sstable.format.Version;
 import org.apache.cassandra.io.util.RandomAccessReader;
 import org.apache.cassandra.utils.ByteBufferUtil;
@@ -19,6 +20,11 @@ public class IndexReader extends AbstractSSTableReader {
      * Index.db reader.
      */
     private RandomAccessReader reader;
+
+    /**
+     * BTI Keyreader.
+     */
+    private KeyReader keyReader;
 
     /**
      * SSTable version.
@@ -61,15 +67,37 @@ public class IndexReader extends AbstractSSTableReader {
         this.partitioner = partitioner;
     }
 
+
+    /**
+     * Construct a reader for Index.db sstable file.
+     *
+     * @param tableStats  SSTable statistics.
+     * @param keyReader   Reader to Partition.db file.
+     * @param version     Version of SSTable
+     * @param partitioner The sstable partitioner.
+     */
+    public IndexReader(SSTableStatistics tableStats, KeyReader keyReader, Version version, IPartitioner partitioner) {
+        this.tableStats = tableStats;
+        this.keyReader = keyReader;
+        this.version = version;
+        this.nextKey = null;
+        this.partitioner = partitioner;
+    }
+
     /**
      * Skip data field on index entry.
      *
      * @throws IOException
      */
     private void skipData() throws IOException {
-        int size = version.version.compareTo("ma") >= 0 ? (int) reader.readUnsignedVInt() : reader.readInt();
-        if (size > 0) {
-            reader.skipBytesFully(size);
+        if (keyReader != null) {
+            return;
+            //test
+        } else {
+            int size = version.version.compareTo("ma") >= 0 ? (int) reader.readUnsignedVInt() : reader.readInt();
+            if (size > 0) {
+                reader.skipBytesFully(size);
+            }
         }
     }
 
@@ -80,20 +108,25 @@ public class IndexReader extends AbstractSSTableReader {
         }
         try {
             if (nextKey == null) {
-                nextKey = ByteBufferUtil.readWithShortLength(reader);
-                nextPosition = version.version.compareTo("ma") > 0 ? reader.readUnsignedVInt() : reader.readLong();
+                nextKey = getNextKey();
+                nextPosition = getNextPosition();
                 skipData();
             }
+            System.out.printf("Key: %s%n", nextKey);
             partitionStats = new PartitionStatistics(partitioner.decorateKey(nextKey));
             long position = nextPosition;
-            if (!reader.isEOF()) {
-                nextKey = ByteBufferUtil.readWithShortLength(reader);
-                nextPosition = version.version.compareTo("ma") > 0 ? reader.readUnsignedVInt() : reader.readLong();
+            if ((reader != null && !reader.isEOF()) || (keyReader != null && !keyReader.isExhausted() && keyReader.advance())) {
+                nextKey = getNextKey();
+                nextPosition = getNextPosition();
                 skipData();
                 partitionStats.size = nextPosition - position;
             } else {
                 partitionStats.size = this.tableStats.size - position;
-                reader.close();
+                if (reader != null) {
+                    reader.close();
+                } else {
+                    keyReader.close();
+                }
                 completed = true;
             }
             this.tableStats.partitionCount++;
@@ -111,4 +144,23 @@ public class IndexReader extends AbstractSSTableReader {
             return false;
         }
     }
+
+    private ByteBuffer getNextKey() throws IOException {
+        if (keyReader != null) {
+            return keyReader.key();
+        } else {
+            return ByteBufferUtil.readWithShortLength(reader);
+        }
+    }
+
+    private long getNextPosition() throws IOException {
+        if (keyReader != null) {
+            return keyReader.dataPosition();
+        } else {
+            return version.version.compareTo("ma") > 0 ? reader.readUnsignedVInt() : reader.readLong();
+        }
+    }
 }
+
+
+
