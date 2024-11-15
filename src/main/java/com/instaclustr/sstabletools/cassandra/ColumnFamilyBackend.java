@@ -23,7 +23,6 @@ import java.util.Set;
 
 /**
  * ColumnFamilyProxy using Cassandra 3.5 backend.
- *  TODO - maybe break into backend classes per sstable type? BIGColumnFamilyBackend and BTIColumnFamilyBackend?
  */
 public class ColumnFamilyBackend implements ColumnFamilyProxy {
 
