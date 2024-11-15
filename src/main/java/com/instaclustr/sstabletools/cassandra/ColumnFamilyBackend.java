@@ -3,17 +3,13 @@ package com.instaclustr.sstabletools.cassandra;
 import com.instaclustr.sstabletools.*;
 import org.apache.cassandra.db.ColumnFamilyStore;
 import org.apache.cassandra.db.DecoratedKey;
-import org.apache.cassandra.db.SerializationHeader;
 import org.apache.cassandra.db.marshal.AbstractType;
 import org.apache.cassandra.io.sstable.Component;
 import org.apache.cassandra.io.sstable.format.SSTableFormat;
 import org.apache.cassandra.io.sstable.format.big.BigFormat;
-import org.apache.cassandra.io.sstable.format.big.BigTableReader;
 import org.apache.cassandra.io.sstable.format.bti.BtiFormat;
-import org.apache.cassandra.io.util.FileHandle;
 import org.apache.cassandra.schema.TableMetadata;
 import org.apache.cassandra.schema.TableMetadataRef;
-import org.apache.cassandra.utils.FilterFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,7 +19,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -119,7 +114,6 @@ public class ColumnFamilyBackend implements ColumnFamilyProxy {
                                 sstableReader.getMaxTimestamp(),
                                 sstableReader.getSSTableLevel()),
                         sstableReader.keyReader(),
-                        sstableReader.descriptor.version,
                         sstableReader.getPartitioner()
                 ));
             } catch (Throwable t) {
