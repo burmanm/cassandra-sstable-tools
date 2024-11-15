@@ -15,7 +15,7 @@ import org.apache.cassandra.io.sstable.KeyReader;
 public class IndexReader extends AbstractSSTableReader {
 
     /**
-     * BTI Keyreader.
+     * The SSTable KeyReader.
      */
     private KeyReader keyReader;
 
