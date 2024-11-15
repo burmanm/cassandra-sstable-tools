@@ -7,7 +7,9 @@ import org.apache.cassandra.db.SerializationHeader;
 import org.apache.cassandra.db.marshal.AbstractType;
 import org.apache.cassandra.io.sstable.Component;
 import org.apache.cassandra.io.sstable.format.SSTableFormat;
+import org.apache.cassandra.io.sstable.format.big.BigFormat;
 import org.apache.cassandra.io.sstable.format.big.BigTableReader;
+import org.apache.cassandra.io.sstable.format.bti.BtiFormat;
 import org.apache.cassandra.io.util.FileHandle;
 import org.apache.cassandra.schema.TableMetadata;
 import org.apache.cassandra.schema.TableMetadataRef;
@@ -96,59 +98,30 @@ public class ColumnFamilyBackend implements ColumnFamilyProxy {
         Collection<SSTableReader> readers = new ArrayList<>(sstables.size());
         for (org.apache.cassandra.io.sstable.format.SSTableReader sstable : sstables) {
             try {
-                Set<Component> components = sstable.descriptor.discoverComponents();
+                Set<Component> discoveredComponents =
+                        sstable.descriptor.getComponents(Set.of(), Set.of(BtiFormat.Components.PARTITION_INDEX, BigFormat.Components.PRIMARY_INDEX));
 
-                Optional<Component> maybeBigIndexComponent = components.stream().filter(c -> c.name.contains("Index")).findFirst();
-                Optional<Component> maybeBtiIndexComponent = components.stream().filter(c -> c.name.contains("Partitions")).findFirst();
-
-                if (maybeBigIndexComponent.isEmpty() && maybeBtiIndexComponent.isEmpty()) {
+                if (discoveredComponents.isEmpty()) {
+                    //Nothing to read.
                     continue;
                 }
 
-                if(maybeBtiIndexComponent.isPresent()) {
-                    TableMetadata metadata = org.apache.cassandra.tools.Util.metadataFromSSTable(sstable.descriptor);
-                    org.apache.cassandra.io.sstable.format.SSTableReader sstableReader =
-                            org.apache.cassandra.io.sstable.format.SSTableReader.openNoValidation(null, sstable.descriptor, TableMetadataRef.forOfflineTools(metadata));
+                TableMetadata metadata = org.apache.cassandra.tools.Util.metadataFromSSTable(sstable.descriptor);
+                org.apache.cassandra.io.sstable.format.SSTableReader sstableReader =
+                        org.apache.cassandra.io.sstable.format.SSTableReader.openNoValidation(null, sstable.descriptor, TableMetadataRef.forOfflineTools(metadata));
 
-                    readers.add(new IndexReader(
-                            new SSTableStatistics(
-                                    sstableReader.descriptor.id,
-                                    sstableReader.getFilename(),
-                                    sstableReader.uncompressedLength(),
-                                    sstableReader.getMinTimestamp(),
-                                    sstableReader.getMaxTimestamp(),
-                                    sstableReader.getSSTableLevel()),
-                            sstableReader.keyReader(),
-                            sstableReader.descriptor.version,
-                            sstableReader.getPartitioner()
-                    ));
-                } else {
-                    org.apache.cassandra.io.util.File indexFile = sstable.descriptor.fileFor(maybeBigIndexComponent.get());
-                    FileHandle indexHandle = new FileHandle.Builder(indexFile).complete();
-
-                    BigTableReader reader = new BigTableReader.Builder(sstable.descriptor)
-                            .setComponents(components)
-                            .setFilter(FilterFactory.AlwaysPresent)
-                            .setSerializationHeader(SerializationHeader.makeWithoutStats(cfStore.metadata()))
-                            .setIndexFile(indexHandle)
-                            .build(this.cfStore, false, false);
-
-                    File dataFile = sstable.descriptor.fileFor(SSTableFormat.Components.DATA).toJavaIOFile();
-
-                    readers.add(new IndexReader(
-                            new SSTableStatistics(
-                                    sstable.descriptor.id,
-                                    dataFile.getName(),
-                                    sstable.uncompressedLength(),
-                                    sstable.getMinTimestamp(),
-                                    sstable.getMaxTimestamp(),
-                                    sstable.getSSTableLevel()),
-                            reader.getIndexFile().createReader(),
-                            sstable.descriptor.version,
-                            sstable.getPartitioner()
-                    ));
-                }
-
+                readers.add(new IndexReader(
+                        new SSTableStatistics(
+                                sstableReader.descriptor.id,
+                                sstableReader.getFilename(),
+                                sstableReader.uncompressedLength(),
+                                sstableReader.getMinTimestamp(),
+                                sstableReader.getMaxTimestamp(),
+                                sstableReader.getSSTableLevel()),
+                        sstableReader.keyReader(),
+                        sstableReader.descriptor.version,
+                        sstableReader.getPartitioner()
+                ));
             } catch (Throwable t) {
                 logger.error("Error opening index readers", t);
             }
