@@ -112,7 +112,6 @@ public class IndexReader extends AbstractSSTableReader {
                 nextPosition = getNextPosition();
                 skipData();
             }
-            System.out.printf("Key: %s%n", nextKey);
             partitionStats = new PartitionStatistics(partitioner.decorateKey(nextKey));
             long position = nextPosition;
             if ((reader != null && !reader.isEOF()) || (keyReader != null && !keyReader.isExhausted() && keyReader.advance())) {
