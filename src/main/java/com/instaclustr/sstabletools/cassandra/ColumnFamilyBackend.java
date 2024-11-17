@@ -8,8 +8,6 @@ import org.apache.cassandra.io.sstable.Component;
 import org.apache.cassandra.io.sstable.format.SSTableFormat;
 import org.apache.cassandra.io.sstable.format.big.BigFormat;
 import org.apache.cassandra.io.sstable.format.bti.BtiFormat;
-import org.apache.cassandra.schema.TableMetadata;
-import org.apache.cassandra.schema.TableMetadataRef;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,8 +76,8 @@ public class ColumnFamilyBackend implements ColumnFamilyProxy {
         if (filter != null) {
             List<org.apache.cassandra.io.sstable.format.SSTableReader> filteredSSTables = new ArrayList<>(sstables.size());
             for (org.apache.cassandra.io.sstable.format.SSTableReader sstable : sstables) {
-                File dataFile = sstable.descriptor.fileFor(SSTableFormat.Components.DATA).toJavaIOFile();;
-                if (filter.contains(dataFile.getName())) {
+                String filename = sstable.descriptor.fileFor(SSTableFormat.Components.DATA).name();
+                if (filter.contains(filename)) {
                     filteredSSTables.add(sstable);
                 }
             }
@@ -100,20 +98,16 @@ public class ColumnFamilyBackend implements ColumnFamilyProxy {
                     continue;
                 }
 
-                TableMetadata metadata = org.apache.cassandra.tools.Util.metadataFromSSTable(sstable.descriptor);
-                org.apache.cassandra.io.sstable.format.SSTableReader sstableReader =
-                        org.apache.cassandra.io.sstable.format.SSTableReader.openNoValidation(null, sstable.descriptor, TableMetadataRef.forOfflineTools(metadata));
-
                 readers.add(new IndexReader(
                         new SSTableStatistics(
-                                sstableReader.descriptor.id,
-                                sstableReader.getFilename(),
-                                sstableReader.uncompressedLength(),
-                                sstableReader.getMinTimestamp(),
-                                sstableReader.getMaxTimestamp(),
-                                sstableReader.getSSTableLevel()),
-                        sstableReader.keyReader(),
-                        sstableReader.getPartitioner()
+                                sstable.descriptor.id,
+                                sstable.getFilename(),
+                                sstable.uncompressedLength(),
+                                sstable.getMinTimestamp(),
+                                sstable.getMaxTimestamp(),
+                                sstable.getSSTableLevel()),
+                        sstable.keyReader(),
+                        sstable.getPartitioner()
                 ));
             } catch (Throwable t) {
                 logger.error("Error opening index readers", t);
