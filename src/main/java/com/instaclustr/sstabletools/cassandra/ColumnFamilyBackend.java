@@ -98,10 +98,15 @@ public class ColumnFamilyBackend implements ColumnFamilyProxy {
                     continue;
                 }
 
+                if(discoveredComponents.size() > 1){
+                    logger.error("Multiple Components found, this should never happen. Filename might be incorrect.");
+                }
+
+                //discoveredComponents get can't fail here, cause we check if the Set is empty just above?
                 readers.add(new IndexReader(
                         new SSTableStatistics(
                                 sstable.descriptor.id,
-                                sstable.getFilename(),
+                                discoveredComponents.stream().findFirst().get().name(),
                                 sstable.uncompressedLength(),
                                 sstable.getMinTimestamp(),
                                 sstable.getMaxTimestamp(),
