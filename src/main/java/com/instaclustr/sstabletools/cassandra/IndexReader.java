@@ -91,6 +91,3 @@ public class IndexReader extends AbstractSSTableReader {
         }
     }
 }
-
-
-
