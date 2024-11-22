@@ -14,10 +14,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * ColumnFamilyProxy using Cassandra 3.5 backend.
@@ -102,11 +99,13 @@ public class ColumnFamilyBackend implements ColumnFamilyProxy {
                     logger.error("Multiple Components found, this should never happen. Filename might be incorrect.");
                 }
 
-                //discoveredComponents get can't fail here, cause we check if the Set is empty just above?
+                Optional<Component> maybeComponent = discoveredComponents.stream().findFirst();
+                String filename = maybeComponent.isPresent() ? sstable.descriptor.fileFor(maybeComponent.get()).name() : "Unknown - missing component, this should never happen.";
+
                 readers.add(new IndexReader(
                         new SSTableStatistics(
                                 sstable.descriptor.id,
-                                sstable.descriptor.fileFor(discoveredComponents.stream().findFirst().get()).name(),
+                                filename,
                                 sstable.uncompressedLength(),
                                 sstable.getMinTimestamp(),
                                 sstable.getMaxTimestamp(),
