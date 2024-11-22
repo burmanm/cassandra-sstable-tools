@@ -106,7 +106,7 @@ public class ColumnFamilyBackend implements ColumnFamilyProxy {
                 readers.add(new IndexReader(
                         new SSTableStatistics(
                                 sstable.descriptor.id,
-                                discoveredComponents.stream().findFirst().get().name(),
+                                sstable.descriptor.fileFor(discoveredComponents.stream().findFirst().get()).name(),
                                 sstable.uncompressedLength(),
                                 sstable.getMinTimestamp(),
                                 sstable.getMaxTimestamp(),
