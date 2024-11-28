@@ -100,12 +100,15 @@ public class ColumnFamilyBackend implements ColumnFamilyProxy {
                 }
 
                 Optional<Component> maybeComponent = discoveredComponents.stream().findFirst();
-                String filename = maybeComponent.isPresent() ? sstable.descriptor.fileFor(maybeComponent.get()).name() : "Unknown - missing component, this should never happen.";
+
+                org.apache.cassandra.io.util.File sstableIndexFile =
+                        sstable.descriptor.fileFor(maybeComponent.orElseThrow(() ->
+                                new IllegalStateException(String.format("No Component found on sstable %s, this should never happen.", sstable.getFilename()))));
 
                 readers.add(new IndexReader(
                         new SSTableStatistics(
                                 sstable.descriptor.id,
-                                filename,
+                                sstableIndexFile.name(),
                                 sstable.uncompressedLength(),
                                 sstable.getMinTimestamp(),
                                 sstable.getMaxTimestamp(),
