@@ -1,0 +1,33 @@
+name: SSTableTools release
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  release_tools_version:
+    name: Release SSTable Tools jar
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Setup JDK 11
+        uses: actions/setup-java@v4
+        with:
+          java-version: 11
+          distribution: 'temurin'
+      - name: Build with Maven
+        run: |
+          mvn clean install
+      - name: Publish package
+        run: mvn --batch-mode deploy
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            target/ic-sstable-tools.jar
+            bin/ic-sstable-tools
