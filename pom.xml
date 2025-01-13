@@ -63,22 +63,19 @@
     </organization>
     
     <scm>
-        <connection>scm:git:git://git@github.com:instaclustr/cassandra-sstable-tools.git</connection>
-        <developerConnection>scm:git:ssh://github.com/instaclustr/cassandra-sstable-tools.git</developerConnection>
-        <url>git://github.com/instaclustr/cassandra-sstable-tools.git</url>
+        <connection>scm:git:git://git@github.com:burmanm/cassandra-sstable-tools.git</connection>
+        <developerConnection>scm:git:ssh://github.com/burmanm/cassandra-sstable-tools.git</developerConnection>
+        <url>git://github.com/burmanm/cassandra-sstable-tools.git</url>
     </scm>
     
     <distributionManagement>
         <repository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+            <id>github</id>
+            <name>GitHub Packages</name>
+            <url>https://maven.pkg.github.com/burmanm/cassandra-sstable-tools</url>
         </repository>
-        <snapshotRepository>
-            <id>nexus-snapshots</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
-        </snapshotRepository>
     </distributionManagement>
-    
+
     <dependencies>
         <dependency>
             <groupId>info.picocli</groupId>
@@ -88,7 +85,7 @@
         <dependency>
             <groupId>org.apache.cassandra</groupId>
             <artifactId>cassandra-all</artifactId>
-            <version>5.0.0</version>
+            <version>5.0.2</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
